@@ -1,0 +1,21 @@
+# ==============================================================================
+# Example Terraform Variables for Tax BBB Cloud Deployment
+# ==============================================================================
+# Copy this file to terraform.tfvars and update the values as needed.
+# ==============================================================================
+
+# Required Variables
+project_id          = "your-gcp-project-id"
+region              = "us-west1"
+frontend_image_url  = "gcr.io/your-project/tax-bbb-frontend:latest"
+analyzer_image_url  = "gcr.io/your-project/tax-bbb-analyzer:latest"
+
+# Optional Variables (Uncomment and modify as needed)
+# environment         = "dev"
+# frontend_memory_limit = "512Mi"
+# analyzer_memory_limit = "1Gi"
+# frontend_cpu_limit    = 1
+# analyzer_cpu_limit    = 2
+# min_instances         = 0
+# max_instances         = 10
+
