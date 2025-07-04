@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trump BBB Tax Optimizer – Guided Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .help-modal { display: none; }
+        .help-modal.active { display: flex; }
+        .phase-out-warning {
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-3xl font-bold text-center text-green-400 mb-2">
+                Trump BBB Tax Optimizer – Guided Edition
+            </h1>
+            <p class="text-center text-gray-300">
+                Calculate your 2025 tax benefits under the One Big, Beautiful Bill
+            </p>
+            <div class="text-center mt-4">
+                <div class="inline-block bg-green-600 text-white px-6 py-2 rounded-lg font-semibold">
+                    Total Estimated Savings: <span id="totalSavings">$0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-gray-800 border-b border-gray-700">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex space-x-1">
+                <button class="tab-btn active px-6 py-3 text-sm font-medium rounded-t-lg bg-gray-700 text-white border-b-2 border-green-400" data-tab="qbi">
+                    📊 QBI Calculator
+                </button>
+                <button class="tab-btn px-6 py-3 text-sm font-medium rounded-t-lg bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700" data-tab="vehicle">
+                    🚗 Vehicle Loan
+                </button>
+                <button class="tab-btn px-6 py-3 text-sm font-medium rounded-t-lg bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700" data-tab="asset">
+                    🏗️ Asset Depreciation
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto p-6">
+        <!-- QBI Calculator Tab -->
+        <div id="qbi-tab" class="tab-content active">
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold text-green-400 mb-6 flex items-center">
+                    📊 QBI Deduction Calculator
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Inputs -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">Inputs</h3>
+                        
+                        <!-- Business Income -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Business Income</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="business-income">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="number" id="businessIncome" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="150000">
+                                <button class="quick-calc-btn bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg text-sm" data-calc="business-income">
+                                    Quick Calc
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Total Taxable Income -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Total Taxable Income</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="taxable-income">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <input type="number" id="taxableIncome" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="200000">
+                        </div>
+
+                        <!-- W-2 Wages -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">W-2 Wages</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="w2-wages">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <input type="number" id="w2Wages" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="0">
+                        </div>
+
+                        <!-- Filing Status -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Filing Status</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="filing-status">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <select id="filingStatus" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="single">Single</option>
+                                <option value="married">Married Filing Jointly</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Results -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">Results</h3>
+                        
+                        <!-- Phase-out Warning -->
+                        <div id="phaseOutWarning" class="hidden phase-out-warning text-black p-4 rounded-lg mb-4">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                                <span class="font-semibold">Phase-out Warning</span>
+                            </div>
+                            <p class="text-sm mt-1">You are <span id="phaseOutPercent">0</span>% into the phase-out zone — part of your QBI deduction may be reduced.</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="bg-red-900 border border-red-700 rounded-lg p-4">
+                                <h4 class="text-red-300 text-sm font-medium">Before BBB</h4>
+                                <p class="text-2xl font-bold text-white" id="qbiBeforeBBB">$0</p>
+                            </div>
+                            <div class="bg-green-900 border border-green-700 rounded-lg p-4">
+                                <h4 class="text-green-300 text-sm font-medium">After BBB</h4>
+                                <p class="text-2xl font-bold text-white" id="qbiAfterBBB">$0</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-900 border border-blue-700 rounded-lg p-4">
+                            <h4 class="text-blue-300 text-sm font-medium">Annual Tax Savings</h4>
+                            <p class="text-2xl font-bold text-white" id="qbiSavings">$0</p>
+                        </div>
+
+                        <div class="mt-6 bg-yellow-900 border border-yellow-700 rounded-lg p-4">
+                            <h4 class="text-yellow-300 font-semibold mb-2">How it works:</h4>
+                            <p class="text-sm text-yellow-100">
+                                The BBB bill lowers QBI phase-out thresholds from $182k to $75k for single filers, 
+                                meaning more small businesses qualify for the full 20% deduction.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Loan Calculator Tab -->
+        <div id="vehicle-tab" class="tab-content">
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold text-green-400 mb-6 flex items-center">
+                    🚗 Vehicle Loan Deduction
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Inputs -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">Inputs</h3>
+                        
+                        <!-- Vehicle Cost -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Vehicle Cost</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="vehicle-cost">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <input type="number" id="vehicleCost" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="45000">
+                        </div>
+
+                        <!-- Loan APR -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Loan APR (%)</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="loan-apr">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <input type="number" id="vehicleAPR" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="6.5">
+                        </div>
+
+                        <!-- Year Purchased -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Year Purchased</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="year-purchased">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <select id="yearPurchased" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                            </select>
+                        </div>
+
+                        <!-- U.S.-Assembled -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">U.S.-Assembled?</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="us-assembled">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <select id="usAssembled" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="yes">Yes - New U.S.-Made Vehicle</option>
+                                <option value="no">No - Used or Foreign Vehicle</option>
+                            </select>
+                        </div>
+
+                        <button class="quick-calc-btn bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg" data-calc="vehicle-payment">
+                            Calculate Payment & Interest
+                        </button>
+                    </div>
+
+                    <!-- Results -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">Results</h3>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="bg-red-900 border border-red-700 rounded-lg p-4">
+                                <h4 class="text-red-300 text-sm font-medium">Before BBB</h4>
+                                <p class="text-2xl font-bold text-white" id="vehicleBeforeBBB">$0</p>
+                            </div>
+                            <div class="bg-green-900 border border-green-700 rounded-lg p-4">
+                                <h4 class="text-green-300 text-sm font-medium">After BBB</h4>
+                                <p class="text-2xl font-bold text-white" id="vehicleAfterBBB">$0</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-900 border border-blue-700 rounded-lg p-4 mb-4">
+                            <h4 class="text-blue-300 text-sm font-medium">Annual Tax Savings</h4>
+                            <p class="text-2xl font-bold text-white" id="vehicleSavings">$0</p>
+                        </div>
+
+                        <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                            <h4 class="text-gray-300 text-sm font-medium mb-2">Loan Details</h4>
+                            <div class="text-sm space-y-1">
+                                <div>Monthly Payment: <span id="monthlyPayment" class="font-semibold">$0</span></div>
+                                <div>Total Interest: <span id="totalInterest" class="font-semibold">$0</span></div>
+                                <div>Annual Interest: <span id="annualInterest" class="font-semibold">$0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-yellow-900 border border-yellow-700 rounded-lg p-4">
+                            <h4 class="text-yellow-300 font-semibold mb-2">How it works:</h4>
+                            <p class="text-sm text-yellow-100">
+                                The BBB allows deduction of vehicle loan interest up to $10,000/year for new, 
+                                U.S.-assembled vehicles purchased between 2023-2028.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Depreciation Calculator Tab -->
+        <div id="asset-tab" class="tab-content">
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold text-green-400 mb-6 flex items-center">
+                    🏗️ Asset Loan & Depreciation
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Inputs -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">Inputs</h3>
+                        
+                        <!-- Asset Type -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Asset Type</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="asset-type">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <select id="assetType" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="equipment">Equipment</option>
+                                <option value="real-estate">Real Estate</option>
+                                <option value="vehicle">Vehicle</option>
+                                <option value="leasehold">Leasehold Improvements</option>
+                            </select>
+                        </div>
+
+                        <!-- Asset Cost -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Asset Cost</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="asset-cost">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <input type="number" id="assetCost" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="100000">
+                        </div>
+
+                        <!-- Down Payment -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Down Payment</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="down-payment">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <input type="number" id="downPayment" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="20000">
+                        </div>
+
+                        <!-- Loan APR -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Loan APR (%)</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="asset-apr">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <input type="number" id="assetAPR" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="7.5">
+                        </div>
+
+                        <!-- Loan Term -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Loan Term (years)</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="loan-term">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <input type="number" id="loanTerm" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="10">
+                        </div>
+
+                        <!-- Depreciation Method -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="block text-sm font-medium">Depreciation Method</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="depreciation-method">
+                                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <select id="depreciationMethod" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="section179">Section 179 (Full deduction in 1 year)</option>
+                                <option value="bonus">Bonus Depreciation (Large % now, rest later)</option>
+                                <option value="straight-line">Straight-line (Even over years)</option>
+                            </select>
+                        </div>
+
+                        <button class="quick-calc-btn bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg" data-calc="asset-loan">
+                            Calculate Loan & Deduction
+                        </button>
+                    </div>
+
+                    <!-- Results -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">Results</h3>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="bg-red-900 border border-red-700 rounded-lg p-4">
+                                <h4 class="text-red-300 text-sm font-medium">Before BBB</h4>
+                                <p class="text-2xl font-bold text-white" id="assetBeforeBBB">$0</p>
+                            </div>
+                            <div class="bg-green-900 border border-green-700 rounded-lg p-4">
+                                <h4 class="text-green-300 text-sm font-medium">After BBB</h4>
+                                <p class="text-2xl font-bold text-white" id="assetAfterBBB">$0</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-900 border border-blue-700 rounded-lg p-4 mb-4">
+                            <h4 class="text-blue-300 text-sm font-medium">Annual Tax Savings</h4>
+                            <p class="text-2xl font-bold text-white" id="assetSavings">$0</p>
+                        </div>
+
+                        <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                            <h4 class="text-gray-300 text-sm font-medium mb-2">Loan & Depreciation Details</h4>
+                            <div class="text-sm space-y-1">
+                                <div>Loan Amount: <span id="loanAmount" class="font-semibold">$0</span></div>
+                                <div>Annual Interest: <span id="assetAnnualInterest" class="font-semibold">$0</span></div>
+                                <div>Annual Depreciation: <span id="annualDepreciation" class="font-semibold">$0</span></div>
+                                <div>Total Annual Deduction: <span id="totalDeduction" class="font-semibold">$0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-yellow-900 border border-yellow-700 rounded-lg p-4">
+                            <h4 class="text-yellow-300 font-semibold mb-2">How it works:</h4>
+                            <p class="text-sm text-yellow-100">
+                                The BBB expands business interest deduction using EBIT instead of EBITDA, 
+                                allowing more interest to be deductible for asset financing.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="bg-gray-800 rounded-lg p-6 mt-6">
+            <h3 class="text-xl font-semibold mb-4">Export Results</h3>
+            <div class="flex gap-4">
+                <button id="exportCSV" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Download CSV
+                </button>
+                <button id="exportPDF" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    Export PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="bg-gray-800 rounded-lg p-6 mt-6 text-center">
+            <p class="text-gray-400 text-sm">
+                This calculator is for estimation purposes only. Consult a tax professional for personalized advice.
+                <br>
+                Built for small business owners impacted by the 2025 One Big, Beautiful Bill
+            </p>
+        </div>
+    </main>
+
+    <!-- Help Modals -->
+    <div id="helpModal" class="help-modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-md mx-4 border border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="helpTitle" class="text-lg font-semibold text-white"></h3>
+                <button id="closeHelp" class="text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="helpContent" class="text-gray-300 text-sm"></div>
+        </div>
+    </div>
+
+    <!-- Quick Calculator Modals -->
+    <div id="quickCalcModal" class="help-modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-lg mx-4 border border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="calcTitle" class="text-lg font-semibold text-white"></h3>
+                <button id="closeCalc" class="text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="calcContent" class="text-gray-300"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
