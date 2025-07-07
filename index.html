@@ -208,8 +208,6 @@
                                 </button>
                             </div>
                             <select id="yearPurchased" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                                <option value="2023">2023</option>
-                                <option value="2024">2024</option>
                                 <option value="2025">2025</option>
                                 <option value="2026">2026</option>
                                 <option value="2027">2027</option>
@@ -217,17 +215,17 @@
                             </select>
                         </div>
 
-                        <!-- U.S.-Assembled -->
+                        <!-- Vehicle Type -->
                         <div class="mb-6">
                             <div class="flex items-center gap-2 mb-2">
-                                <label class="block text-sm font-medium">U.S.-Assembled?</label>
-                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="us-assembled">
+                                <label class="block text-sm font-medium">Vehicle Type</label>
+                                <button class="help-btn text-blue-400 hover:text-blue-300" data-help="vehicle-type">
                                     <i data-lucide="help-circle" class="w-4 h-4"></i>
                                 </button>
                             </div>
-                            <select id="usAssembled" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                                <option value="yes">Yes - New U.S.-Made Vehicle</option>
-                                <option value="no">No - Used or Foreign Vehicle</option>
+                            <select id="vehicleType" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="new">New Vehicle (Original use commences with you)</option>
+                                <option value="used">Used Vehicle (Not eligible)</option>
                             </select>
                         </div>
 
@@ -268,8 +266,8 @@
                         <div class="bg-yellow-900 border border-yellow-700 rounded-lg p-4">
                             <h4 class="text-yellow-300 font-semibold mb-2">How it works:</h4>
                             <p class="text-sm text-yellow-100">
-                                The BBB allows deduction of vehicle loan interest up to $10,000/year for new, 
-                                U.S.-assembled vehicles purchased between 2023-2028.
+                                The BBB allows deduction of vehicle loan interest up to $10,000/year for new 
+                                vehicles (original use commences with taxpayer) purchased between 2025-2028.
                             </p>
                         </div>
                     </div>
@@ -402,8 +400,9 @@
                         <div class="bg-yellow-900 border border-yellow-700 rounded-lg p-4">
                             <h4 class="text-yellow-300 font-semibold mb-2">How it works:</h4>
                             <p class="text-sm text-yellow-100">
-                                The BBB expands business interest deduction using EBIT instead of EBITDA, 
-                                allowing more interest to be deductible for asset financing.
+                                The BBB changes business interest limitation from 30% of EBITDA to 30% of EBIT 
+                                (Section 70303), allowing more interest deduction by excluding depreciation/amortization 
+                                from the limitation calculation.
                             </p>
                         </div>
                     </div>

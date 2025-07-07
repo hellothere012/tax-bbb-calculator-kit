@@ -8,11 +8,414 @@ let calculatorData = {
     asset: { beforeBBB: 0, afterBBB: 0, savings: 0 }
 };
 
+// Validation rules for all input fields
+const validationRules = {
+    businessIncome: { 
+        min: 0, 
+        max: 10000000, 
+        required: true,
+        displayName: "Business Income",
+        type: "currency"
+    },
+    taxableIncome: { 
+        min: 0, 
+        max: 10000000, 
+        required: true,
+        displayName: "Total Taxable Income",
+        type: "currency"
+    },
+    w2Wages: { 
+        min: 0, 
+        max: 5000000, 
+        required: false,
+        displayName: "W-2 Wages",
+        type: "currency"
+    },
+    vehicleCost: { 
+        min: 0, 
+        max: 200000, 
+        required: true,
+        displayName: "Vehicle Cost",
+        type: "currency"
+    },
+    vehicleAPR: { 
+        min: 0, 
+        max: 25, 
+        required: true,
+        displayName: "Vehicle Loan APR",
+        type: "percentage",
+        step: 0.1
+    },
+    yearPurchased: { 
+        min: 2023, 
+        max: 2028, 
+        required: true,
+        displayName: "Year Purchased",
+        type: "year"
+    },
+    assetCost: { 
+        min: 0, 
+        max: 5000000, 
+        required: true,
+        displayName: "Asset Cost",
+        type: "currency"
+    },
+    assetAPR: { 
+        min: 0, 
+        max: 25, 
+        required: true,
+        displayName: "Asset Loan APR",
+        type: "percentage",
+        step: 0.1
+    },
+    downPayment: { 
+        min: 0, 
+        max: 1000000, 
+        required: false,
+        displayName: "Down Payment",
+        type: "currency"
+    },
+    loanTerm: { 
+        min: 1, 
+        max: 30, 
+        required: true,
+        displayName: "Loan Term",
+        type: "integer"
+    }
+};
+
+// Core validation function
+function validateNumericInput(value, fieldName, rules) {
+    // Handle empty values
+    if (value === '' || value === null || value === undefined) {
+        if (rules.required) {
+            return { 
+                valid: false, 
+                message: `${rules.displayName} is required`,
+                value: null 
+            };
+        } else {
+            return { 
+                valid: true, 
+                message: null,
+                value: 0 
+            };
+        }
+    }
+    
+    // Convert to number
+    const numValue = parseFloat(value);
+    
+    // Check if numeric
+    if (isNaN(numValue)) {
+        return { 
+            valid: false, 
+            message: `${rules.displayName} must be a valid number`,
+            value: null 
+        };
+    }
+    
+    // Check minimum bound
+    if (numValue < rules.min) {
+        const minDisplay = rules.min >= 1000 ? `${rules.min.toLocaleString()}` : rules.min;
+        return { 
+            valid: false, 
+            message: `${rules.displayName} cannot be less than ${minDisplay}`,
+            value: null 
+        };
+    }
+    
+    // Check maximum bound
+    if (numValue > rules.max) {
+        const maxDisplay = rules.max >= 1000 ? `${rules.max.toLocaleString()}` : rules.max;
+        return { 
+            valid: false, 
+            message: `${rules.displayName} cannot exceed ${maxDisplay}`,
+            value: null 
+        };
+    }
+    
+    // Additional validation for integer types
+    if (rules.type === 'integer' && !Number.isInteger(numValue)) {
+        return { 
+            valid: false, 
+            message: `${rules.displayName} must be a whole number`,
+            value: null 
+        };
+    }
+    
+    // Additional validation for year type
+    if (rules.type === 'year' && (numValue < 2023 || numValue > 2028)) {
+        return { 
+            valid: false, 
+            message: `${rules.displayName} must be between 2023 and 2028`,
+            value: null 
+        };
+    }
+    
+    return { 
+        valid: true, 
+        message: null,
+        value: numValue 
+    };
+}
+
+// Error display system
+function showFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    
+    // Add error styling to input
+    field.classList.add('border-red-500', 'bg-red-900');
+    field.classList.remove('border-gray-600', 'bg-gray-700');
+    
+    // Create or update error message
+    let errorDiv = document.getElementById(`${fieldId}-error`);
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = `${fieldId}-error`;
+        errorDiv.className = 'text-red-400 text-sm mt-1';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.setAttribute('aria-live', 'polite');
+        
+        // Insert after the input field
+        const inputContainer = field.closest('.mb-6') || field.parentNode;
+        inputContainer.appendChild(errorDiv);
+    }
+    
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+}
+
+function hideFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    
+    // Remove error styling from input
+    field.classList.remove('border-red-500', 'bg-red-900');
+    field.classList.add('border-gray-600', 'bg-gray-700');
+    
+    // Hide error message
+    const errorDiv = document.getElementById(`${fieldId}-error`);
+    if (errorDiv) {
+        errorDiv.classList.add('hidden');
+    }
+}
+
+function clearAllErrors() {
+    // Clear all field errors
+    Object.keys(validationRules).forEach(fieldId => {
+        hideFieldError(fieldId);
+    });
+    
+    // Clear any calculation errors
+    const calculationError = document.getElementById('calculation-error');
+    if (calculationError) {
+        calculationError.classList.add('hidden');
+    }
+}
+
+function showCalculationError(message) {
+    let errorDiv = document.getElementById('calculation-error');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'calculation-error';
+        errorDiv.className = 'bg-red-900 border border-red-700 text-red-300 p-4 rounded-lg mb-4';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.setAttribute('aria-live', 'polite');
+        
+        // Insert at the top of the main content
+        const mainContent = document.querySelector('main');
+        mainContent.insertBefore(errorDiv, mainContent.firstChild);
+    }
+    
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        errorDiv.classList.add('hidden');
+    }, 5000);
+}
+
+// Enhanced input event handlers
+function initializeValidatedInputs() {
+    const inputFields = Object.keys(validationRules);
+    
+    inputFields.forEach(fieldId => {
+        const input = document.getElementById(fieldId);
+        if (!input) return;
+        
+        // Add input event listener for real-time validation
+        input.addEventListener('input', (e) => {
+            const rules = validationRules[fieldId];
+            const validation = validateNumericInput(e.target.value, fieldId, rules);
+            
+            if (validation.valid) {
+                hideFieldError(fieldId);
+                // Trigger calculation update if all required fields are valid
+                if (shouldUpdateCalculations()) {
+                    updateCalculations();
+                }
+            } else {
+                showFieldError(fieldId, validation.message);
+                // Clear calculations if there are validation errors
+                clearCalculations();
+            }
+        });
+        
+        // Add blur event listener for formatting
+        input.addEventListener('blur', (e) => {
+            const rules = validationRules[fieldId];
+            const validation = validateNumericInput(e.target.value, fieldId, rules);
+            
+            if (validation.valid && validation.value !== 0) {
+                // Format the display value based on type
+                if (rules.type === 'currency' && validation.value >= 1000) {
+                    e.target.value = validation.value.toLocaleString();
+                } else if (rules.type === 'percentage') {
+                    e.target.value = validation.value.toString();
+                } else if (rules.type === 'integer' || rules.type === 'year') {
+                    e.target.value = validation.value.toString();
+                } else {
+                    e.target.value = validation.value.toString();
+                }
+            }
+        });
+        
+        // Add focus event listener to remove formatting for editing
+        input.addEventListener('focus', (e) => {
+            const value = e.target.value.replace(/,/g, ''); // Remove commas for editing
+            if (!isNaN(parseFloat(value))) {
+                e.target.value = value;
+            }
+        });
+        
+        // Add keydown event listener for Enter key
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // Move to next input or trigger calculation
+                const nextInput = findNextInput(fieldId);
+                if (nextInput) {
+                    nextInput.focus();
+                } else {
+                    updateCalculations();
+                }
+            }
+        });
+    });
+}
+
+function shouldUpdateCalculations() {
+    // Check if all required fields have valid values
+    const requiredFields = Object.keys(validationRules).filter(fieldId => {
+        const field = document.getElementById(fieldId);
+        return field && validationRules[fieldId].required;
+    });
+    
+    return requiredFields.every(fieldId => {
+        const input = document.getElementById(fieldId);
+        if (!input) return false;
+        
+        const rules = validationRules[fieldId];
+        const validation = validateNumericInput(input.value, fieldId, rules);
+        return validation.valid;
+    });
+}
+
+function findNextInput(currentFieldId) {
+    const inputFields = Object.keys(validationRules);
+    const currentIndex = inputFields.indexOf(currentFieldId);
+    
+    // Find next visible input field
+    for (let i = currentIndex + 1; i < inputFields.length; i++) {
+        const nextField = document.getElementById(inputFields[i]);
+        if (nextField && nextField.offsetParent !== null) { // Check if field is visible
+            return nextField;
+        }
+    }
+    
+    return null;
+}
+
+function clearCalculations() {
+    // Clear all calculation results
+    calculatorData = {
+        qbi: { beforeBBB: 0, afterBBB: 0, savings: 0 },
+        vehicle: { beforeBBB: 0, afterBBB: 0, savings: 0 },
+        asset: { beforeBBB: 0, afterBBB: 0, savings: 0 }
+    };
+    
+    updateTotalSavings();
+    updateDisplayResults();
+}
+
+function updateDisplayResults() {
+    // Update QBI display
+    document.getElementById('qbiBeforeBBB').textContent = formatCurrency(calculatorData.qbi.beforeBBB);
+    document.getElementById('qbiAfterBBB').textContent = formatCurrency(calculatorData.qbi.afterBBB);
+    document.getElementById('qbiSavings').textContent = formatCurrency(calculatorData.qbi.savings);
+    
+    // Update Vehicle display
+    document.getElementById('vehicleBeforeBBB').textContent = formatCurrency(calculatorData.vehicle.beforeBBB);
+    document.getElementById('vehicleAfterBBB').textContent = formatCurrency(calculatorData.vehicle.afterBBB);
+    document.getElementById('vehicleSavings').textContent = formatCurrency(calculatorData.vehicle.savings);
+    
+    // Update Asset display
+    document.getElementById('assetBeforeBBB').textContent = formatCurrency(calculatorData.asset.beforeBBB);
+    document.getElementById('assetAfterBBB').textContent = formatCurrency(calculatorData.asset.afterBBB);
+    document.getElementById('assetSavings').textContent = formatCurrency(calculatorData.asset.savings);
+}
+
+function updateCalculations() {
+    // Run appropriate calculations based on current tab
+    const activeTab = document.querySelector('.tab-content.active');
+    if (!activeTab) return;
+    
+    const tabId = activeTab.id;
+    if (tabId === 'qbi-tab') {
+        safeCalculateQBI();
+    } else if (tabId === 'vehicle-tab') {
+        safeCalculateVehicle();
+    } else if (tabId === 'asset-tab') {
+        safeCalculateAsset();
+    }
+}
+
+// Safe calculation wrappers with error handling
+function safeCalculateQBI() {
+    try {
+        calculateQBI();
+    } catch (error) {
+        console.error('QBI calculation error:', error);
+        showCalculationError('An error occurred while calculating QBI deduction. Please check your inputs.');
+    }
+}
+
+function safeCalculateVehicle() {
+    try {
+        calculateVehicle();
+    } catch (error) {
+        console.error('Vehicle calculation error:', error);
+        showCalculationError('An error occurred while calculating vehicle loan benefits. Please check your inputs.');
+    }
+}
+
+function safeCalculateAsset() {
+    try {
+        calculateAsset();
+    } catch (error) {
+        console.error('Asset calculation error:', error);
+        showCalculationError('An error occurred while calculating asset financing benefits. Please check your inputs.');
+    }
+}
+
 // Help content data
 const helpContent = {
     'business-income': {
         title: 'Business Income',
-        content: 'This is your <strong>net profit</strong> after expenses. Look at IRS Schedule C, Line 31. This is your total business revenue minus all business expenses.'
+        content: 'This is your <strong>net profit</strong> after expenses. Look at IRS Schedule C, Line 31. This is your total business revenue minus all business expenses.<br><br><em>BBB Section 70105 provides enhanced QBI deduction with $400 minimum for active businesses.</em>'
     },
     'taxable-income': {
         title: 'Total Taxable Income',
@@ -28,7 +431,7 @@ const helpContent = {
     },
     'vehicle-cost': {
         title: 'Vehicle Cost',
-        content: 'The total sticker price of the new vehicle you bought. This should be the purchase price before taxes and fees.'
+        content: 'The total sticker price of the new vehicle you bought. This should be the purchase price before taxes and fees.<br><br><em>BBB Section 70203 allows vehicle loan interest deduction for 2025-2028.</em>'
     },
     'loan-apr': {
         title: 'Loan APR',
@@ -36,11 +439,11 @@ const helpContent = {
     },
     'year-purchased': {
         title: 'Year Purchased',
-        content: 'Enter a year from 2023 to 2028. The vehicle loan interest deduction only applies to vehicles purchased in these years.'
+        content: 'Enter a year from 2025 to 2028. The vehicle loan interest deduction only applies to vehicles purchased in these years.'
     },
-    'us-assembled': {
-        title: 'U.S.-Assembled Vehicle',
-        content: 'This deduction only applies to new, U.S.-made vehicles. Check your vehicle\'s VIN or manufacturer information.'
+    'vehicle-type': {
+        title: 'Vehicle Type',
+        content: 'This deduction only applies to new vehicles where original use commences with the taxpayer. Used vehicles do not qualify.'
     },
     'asset-type': {
         title: 'Asset Type',
@@ -48,7 +451,7 @@ const helpContent = {
     },
     'asset-cost': {
         title: 'Asset Cost',
-        content: 'The total purchase price of the asset you\'re financing. This is the amount before any down payment.'
+        content: 'The total purchase price of the asset you\'re financing. This is the amount before any down payment.<br><br><em>BBB Section 70303 changes business interest limitation from EBITDA to EBIT, allowing more deductible interest.</em>'
     },
     'down-payment': {
         title: 'Down Payment',
@@ -155,11 +558,17 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTabs();
     initializeHelpSystem();
     initializeQuickCalculators();
-    initializeCalculators();
+    initializeValidatedInputs(); // Initialize validation system
+    initializeDropdownInputs(); // Initialize dropdown inputs
     initializeExport();
     
-    // Initial calculation
-    calculateAll();
+    // Clear any existing errors on page load
+    clearAllErrors();
+    
+    // Initial calculation (will only run if all required fields are valid)
+    if (shouldUpdateCalculations()) {
+        calculateAll();
+    }
 });
 
 // Tab functionality
@@ -330,67 +739,79 @@ function initializeSpecificCalculator(calcKey) {
     }
 }
 
-// Main calculators
-function initializeCalculators() {
-    // QBI Calculator inputs
-    const qbiInputs = ['businessIncome', 'taxableIncome', 'w2Wages', 'filingStatus'];
-    qbiInputs.forEach(id => {
+// Initialize dropdown/select inputs (not covered by validation rules)
+function initializeDropdownInputs() {
+    // Add event listeners for dropdown/select inputs that aren't numeric
+    const dropdownInputs = ['filingStatus', 'usAssembled', 'assetType', 'depreciationMethod'];
+    dropdownInputs.forEach(id => {
         const element = document.getElementById(id);
         if (element) {
-            element.addEventListener('input', calculateQBI);
-            element.addEventListener('change', calculateQBI);
-        }
-    });
-    
-    // Vehicle Calculator inputs
-    const vehicleInputs = ['vehicleCost', 'vehicleAPR', 'yearPurchased', 'usAssembled'];
-    vehicleInputs.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.addEventListener('input', calculateVehicle);
-            element.addEventListener('change', calculateVehicle);
-        }
-    });
-    
-    // Asset Calculator inputs
-    const assetInputs = ['assetType', 'assetCost', 'downPayment', 'assetAPR', 'loanTerm', 'depreciationMethod'];
-    assetInputs.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.addEventListener('input', calculateAsset);
-            element.addEventListener('change', calculateAsset);
+            element.addEventListener('change', updateCalculations);
         }
     });
 }
 
-// QBI Calculation
+// QBI Calculation with validation
 function calculateQBI() {
-    const businessIncome = parseFloat(document.getElementById('businessIncome').value) || 0;
-    const taxableIncome = parseFloat(document.getElementById('taxableIncome').value) || 0;
-    const w2Wages = parseFloat(document.getElementById('w2Wages').value) || 0;
+    // Validate all QBI inputs
+    const inputs = {
+        businessIncome: validateNumericInput(
+            document.getElementById('businessIncome').value, 
+            'businessIncome', 
+            validationRules.businessIncome
+        ),
+        taxableIncome: validateNumericInput(
+            document.getElementById('taxableIncome').value, 
+            'taxableIncome', 
+            validationRules.taxableIncome
+        ),
+        w2Wages: validateNumericInput(
+            document.getElementById('w2Wages').value, 
+            'w2Wages', 
+            validationRules.w2Wages
+        )
+    };
+    
+    // Check if any validation failed
+    const failedValidations = Object.entries(inputs).filter(([key, result]) => !result.valid);
+    if (failedValidations.length > 0) {
+        showCalculationError('Please fix the input errors before calculating QBI deduction');
+        return;
+    }
+    
+    // Use validated values
+    const businessIncome = inputs.businessIncome.value;
+    const taxableIncome = inputs.taxableIncome.value;
+    const w2Wages = inputs.w2Wages.value;
     const filingStatus = document.getElementById('filingStatus').value;
     
-    // QBI thresholds
-    const oldThreshold = filingStatus === 'single' ? 182050 : 364100;
-    const newThreshold = filingStatus === 'single' ? 75000 : 175000;
+    // QBI thresholds and phase-out ranges (BBB changes phase-out range, not thresholds)
+    const qbiThreshold = filingStatus === 'single' ? 182000 : 364000;  // Phase-out start (unchanged by BBB)
+    const oldPhaseOutRange = filingStatus === 'single' ? 50000 : 100000;  // Current law phase-out range
+    const newPhaseOutRange = filingStatus === 'single' ? 75000 : 150000;  // BBB phase-out range
     
     // Calculate QBI deduction (simplified)
     const qbiBase = Math.min(businessIncome * 0.2, taxableIncome * 0.2);
     
-    // Before BBB (higher threshold)
+    // Before BBB (current law - shorter phase-out range)
     let qbiBeforeBBB = qbiBase;
-    if (taxableIncome > oldThreshold) {
-        const phaseOutAmount = Math.min(taxableIncome - oldThreshold, 50000);
-        const phaseOutReduction = phaseOutAmount / 50000;
+    if (taxableIncome > qbiThreshold) {
+        const phaseOutAmount = Math.min(taxableIncome - qbiThreshold, oldPhaseOutRange);
+        const phaseOutReduction = phaseOutAmount / oldPhaseOutRange;
         qbiBeforeBBB = qbiBase * (1 - phaseOutReduction);
     }
     
-    // After BBB (lower threshold)
+    // After BBB (extended phase-out range - more taxpayers keep some QBI)
     let qbiAfterBBB = qbiBase;
-    if (taxableIncome > newThreshold) {
-        const phaseOutAmount = Math.min(taxableIncome - newThreshold, 50000);
-        const phaseOutReduction = phaseOutAmount / 50000;
+    if (taxableIncome > qbiThreshold) {
+        const phaseOutAmount = Math.min(taxableIncome - qbiThreshold, newPhaseOutRange);
+        const phaseOutReduction = phaseOutAmount / newPhaseOutRange;
         qbiAfterBBB = qbiBase * (1 - phaseOutReduction);
+    }
+    
+    // Apply $400 minimum deduction for businesses with at least $1,000 QBI (BBB Section 70105(b))
+    if (businessIncome >= 1000) {
+        qbiAfterBBB = Math.max(qbiAfterBBB, 400);
     }
     
     const savings = Math.max(0, qbiAfterBBB - qbiBeforeBBB);
@@ -405,12 +826,14 @@ function calculateQBI() {
     const phaseOutWarning = document.getElementById('phaseOutWarning');
     const phaseOutPercent = document.getElementById('phaseOutPercent');
     
-    if (taxableIncome > newThreshold) {
-        const phaseOutProgress = Math.min((taxableIncome - newThreshold) / 50000 * 100, 100);
-        phaseOutPercent.textContent = Math.round(phaseOutProgress);
-        phaseOutWarning.classList.remove('hidden');
-    } else {
-        phaseOutWarning.classList.add('hidden');
+    if (phaseOutWarning && phaseOutPercent) {
+        if (taxableIncome > newThreshold) {
+            const phaseOutProgress = Math.min((taxableIncome - newThreshold) / 50000 * 100, 100);
+            phaseOutPercent.textContent = Math.round(phaseOutProgress);
+            phaseOutWarning.classList.remove('hidden');
+        } else {
+            phaseOutWarning.classList.add('hidden');
+        }
     }
     
     // Store results
@@ -423,12 +846,45 @@ function calculateQBI() {
     updateTotalSavings();
 }
 
-// Vehicle Calculation
+// Vehicle Calculation with validation
 function calculateVehicle() {
-    const vehicleCost = parseFloat(document.getElementById('vehicleCost').value) || 0;
-    const vehicleAPR = parseFloat(document.getElementById('vehicleAPR').value) || 0;
-    const yearPurchased = parseInt(document.getElementById('yearPurchased').value) || 2025;
-    const usAssembled = document.getElementById('usAssembled').value === 'yes';
+    // Validate all vehicle inputs
+    const inputs = {
+        vehicleCost: validateNumericInput(
+            document.getElementById('vehicleCost').value, 
+            'vehicleCost', 
+            validationRules.vehicleCost
+        ),
+        vehicleAPR: validateNumericInput(
+            document.getElementById('vehicleAPR').value, 
+            'vehicleAPR', 
+            validationRules.vehicleAPR
+        ),
+        yearPurchased: validateNumericInput(
+            document.getElementById('yearPurchased').value, 
+            'yearPurchased', 
+            validationRules.yearPurchased
+        )
+    };
+    
+    // Check if any validation failed
+    const failedValidations = Object.entries(inputs).filter(([key, result]) => !result.valid);
+    if (failedValidations.length > 0) {
+        showCalculationError('Please fix the input errors before calculating vehicle loan benefits');
+        return;
+    }
+    
+    // Additional validation for vehicle eligibility
+    const yearPurchased = inputs.yearPurchased.value;
+    if (yearPurchased < 2025 || yearPurchased > 2028) {
+        showFieldError('yearPurchased', 'Vehicle must be purchased between 2025 and 2028 to qualify');
+        return;
+    }
+    
+    // Use validated values
+    const vehicleCost = inputs.vehicleCost.value;
+    const vehicleAPR = inputs.vehicleAPR.value;
+    const vehicleType = document.getElementById('vehicleType').value;
     
     // Calculate loan details (assuming 5-year term)
     const loanTerm = 5;
@@ -447,15 +903,19 @@ function calculateVehicle() {
     const annualInterest = totalInterest / loanTerm;
     
     // Update loan details display
-    document.getElementById('monthlyPayment').textContent = formatCurrency(monthlyPayment);
-    document.getElementById('totalInterest').textContent = formatCurrency(totalInterest);
-    document.getElementById('annualInterest').textContent = formatCurrency(annualInterest);
+    const monthlyPaymentEl = document.getElementById('monthlyPayment');
+    const totalInterestEl = document.getElementById('totalInterest');
+    const annualInterestEl = document.getElementById('annualInterest');
+    
+    if (monthlyPaymentEl) monthlyPaymentEl.textContent = formatCurrency(monthlyPayment);
+    if (totalInterestEl) totalInterestEl.textContent = formatCurrency(totalInterest);
+    if (annualInterestEl) annualInterestEl.textContent = formatCurrency(annualInterest);
     
     // Calculate deduction
     const beforeBBB = 0; // No deduction before BBB
     let afterBBB = 0;
     
-    if (usAssembled && yearPurchased >= 2023 && yearPurchased <= 2028) {
+    if (vehicleType === 'new' && yearPurchased >= 2025 && yearPurchased <= 2028) {
         afterBBB = Math.min(annualInterest, 10000); // Cap at $10,000
     }
     
@@ -477,14 +937,52 @@ function calculateVehicle() {
     updateTotalSavings();
 }
 
-// Asset Calculation
+// Asset Calculation with validation
 function calculateAsset() {
+    // Validate all asset inputs
+    const inputs = {
+        assetCost: validateNumericInput(
+            document.getElementById('assetCost').value, 
+            'assetCost', 
+            validationRules.assetCost
+        ),
+        assetAPR: validateNumericInput(
+            document.getElementById('assetAPR').value, 
+            'assetAPR', 
+            validationRules.assetAPR
+        ),
+        downPayment: validateNumericInput(
+            document.getElementById('downPayment').value, 
+            'downPayment', 
+            validationRules.downPayment
+        ),
+        loanTerm: validateNumericInput(
+            document.getElementById('loanTerm').value, 
+            'loanTerm', 
+            validationRules.loanTerm
+        )
+    };
+    
+    // Check if any validation failed
+    const failedValidations = Object.entries(inputs).filter(([key, result]) => !result.valid);
+    if (failedValidations.length > 0) {
+        showCalculationError('Please fix the input errors before calculating asset financing benefits');
+        return;
+    }
+    
+    // Use validated values
     const assetType = document.getElementById('assetType').value;
-    const assetCost = parseFloat(document.getElementById('assetCost').value) || 0;
-    const downPayment = parseFloat(document.getElementById('downPayment').value) || 0;
-    const assetAPR = parseFloat(document.getElementById('assetAPR').value) || 0;
-    const loanTerm = parseFloat(document.getElementById('loanTerm').value) || 10;
+    const assetCost = inputs.assetCost.value;
+    const assetAPR = inputs.assetAPR.value;
+    const downPayment = inputs.downPayment.value;
+    const loanTerm = inputs.loanTerm.value;
     const depreciationMethod = document.getElementById('depreciationMethod').value;
+    
+    // Additional validation for down payment vs asset cost
+    if (downPayment > assetCost) {
+        showFieldError('downPayment', 'Down payment cannot exceed asset cost');
+        return;
+    }
     
     const loanAmount = assetCost - downPayment;
     const annualInterest = loanAmount * (assetAPR / 100);
@@ -505,16 +1003,23 @@ function calculateAsset() {
     }
     
     // Update loan details display
-    document.getElementById('loanAmount').textContent = formatCurrency(loanAmount);
-    document.getElementById('assetAnnualInterest').textContent = formatCurrency(annualInterest);
-    document.getElementById('annualDepreciation').textContent = formatCurrency(annualDepreciation);
+    const loanAmountEl = document.getElementById('loanAmount');
+    const assetAnnualInterestEl = document.getElementById('assetAnnualInterest');
+    const annualDepreciationEl = document.getElementById('annualDepreciation');
+    const totalDeductionEl = document.getElementById('totalDeduction');
+    
+    if (loanAmountEl) loanAmountEl.textContent = formatCurrency(loanAmount);
+    if (assetAnnualInterestEl) assetAnnualInterestEl.textContent = formatCurrency(annualInterest);
+    if (annualDepreciationEl) annualDepreciationEl.textContent = formatCurrency(annualDepreciation);
     
     const totalDeduction = annualInterest + annualDepreciation;
-    document.getElementById('totalDeduction').textContent = formatCurrency(totalDeduction);
+    if (totalDeductionEl) totalDeductionEl.textContent = formatCurrency(totalDeduction);
     
-    // Calculate BBB impact (simplified - expanded interest deduction)
-    const beforeBBB = annualInterest * 0.7 + annualDepreciation; // 70% of interest deductible before
-    const afterBBB = annualInterest + annualDepreciation; // 100% of interest deductible after
+    // Calculate BBB impact (BBB Section 70303 - EBITDA to EBIT change)
+    // Before BBB: 30% of EBITDA limit reduces deductible interest
+    // After BBB: 30% of EBIT limit allows more deductible interest
+    const beforeBBB = annualInterest * 0.7 + annualDepreciation; // Approximation of EBITDA limitation
+    const afterBBB = annualInterest + annualDepreciation; // Approximation with EBIT limitation
     
     const savings = afterBBB - beforeBBB;
     const taxSavings = savings * 0.24; // Assuming 24% tax rate
